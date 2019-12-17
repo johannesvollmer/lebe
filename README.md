@@ -3,6 +3,53 @@ Dead simple endianness conversion on primitives, slices, Read, and Write.
 As a consequence, this crate simplifies writing primitive types to
 Read and Write objects, which only accept byte buffers per default.
 
+# Usage
+
+Convert slices in-place.
+```rust
+    use lebe::Endian;
+    
+    fn main(){
+        let mut numbers: &[i32] = &[ 32, 102, 420, 594 ];
+        numbers.make_le();
+    }
+```
+
+Write slices.
+```rust
+    use lebe::io::WriteEndian;
+    
+    fn main(){
+        let numbers: &[i32] = &[ 32, 102, 420, 594 ];
+        
+        let mut output_bytes: Vec<u8> = Vec::new();
+        output_bytes.write_le(numbers).unwrap();
+    }
+```
+
+Read numbers.
+```rust
+    use lebe::io::ReadEndian;
+    
+    fn main(){
+        let mut input_bytes: &[u8] = &[ 3, 244 ];
+        let number: u16 = input_bytes.read_le().unwrap();
+    }
+```
+
+Read slices.
+```rust
+    use lebe::io::ReadEndian;
+    
+    fn main(){
+        let mut numbers: &[i32] = &[ 0; 2 ];
+        
+        let mut input_bytes: &[u8] = &[ 0, 3, 244, 1, 0, 3, 244, 1 ];
+        input_bytes.read_le_into(&mut numbers).unwrap();
+    }
+```
+
+
 # Why not use [byteorder](https://crates.io/crates/byteorder)?
 This crate supports batch-writing slices with native speed 
 where the os has the matching endianness. Writing slices must be done
@@ -15,29 +62,6 @@ This crate has no runtim costs, just as byteorder,
 This crate requires a fairly up-to-date rust version, 
 which not all projects can support.
 
-# Usage
-```rust
-    use lebe::io::{ ReadEndian, WriteEndian };
-    
-    fn main(){
-        // a slice of 12 integers (zeroes for now)
-        let mut numbers = [ 0_i32; 12 ];
-        
-        { // let's read those numbers from a file
-        
-            // a file to read from
-            let mut read = std::fs::File::open("le-file").unwrap();
-            
-            // read 12 integers from a little-endian encoded file
-            read.read_le_into(&mut numbers).unwrap();
-        }
-        
-        println!("Mason, what do these numbers mean: {:?}!?", numbers);
-        
-        let mut output = std::fs::File::create("be-file").unwrap();
-        output.write_be(&numbers).unwrap();
-    }
-```
 
 
 # Fun Facts
