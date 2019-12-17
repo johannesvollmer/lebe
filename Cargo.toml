@@ -1,0 +1,29 @@
+[package]
+name = "lebe"
+version = "0.1.0"
+edition = "2018"
+
+description = "Dead simple byte order conversions"
+categories = ["algorithms", "encoding"]
+keywords = ["byteorder", "endianness", "little endian", "big endian", "conversion"]
+authors = ["johannesvollmer"]
+
+documentation = "https://docs.rs/crate/lebe/"
+repository = "https://github.com/johannesvollmer/lebe-rs"
+readme = "README.md"
+license = "MIT"
+
+[badges]
+maintenance = { status = "actively-maintained" }
+
+[features]
+# piston_image = [ "image" ]
+
+
+[dev-dependencies]
+bencher = "0.1.5"
+byteorder = "1.3.2"
+
+[[bench]]
+name = "benches"
+harness = false # FIXME what does this mean?
