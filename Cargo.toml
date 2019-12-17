@@ -3,7 +3,7 @@ name = "lebe"
 version = "0.1.0"
 edition = "2018"
 
-description = "Dead simple byte order conversions"
+description = "Tiny, dead simple, high performance endianness conversions"
 categories = ["algorithms", "encoding"]
 keywords = ["byteorder", "endianness", "little endian", "big endian", "conversion"]
 authors = ["johannesvollmer"]

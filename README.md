@@ -1,5 +1,8 @@
 # LEBE
-Dead simple endianness conversion on primitives, slices, Read, and Write.
+Tiny, dead simple, high performance endianness conversions
+
+
+Provides conversion on primitives, slices, Read, and Write.
 As a consequence, this crate simplifies writing primitive types to
 Read and Write objects, which only accept byte buffers per default.
 
