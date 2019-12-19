@@ -1,13 +1,15 @@
 # LEBE
 Tiny, dead simple, high performance endianness conversions
 
+# Purpose
+This crate has exactly two purposes:
+  1. Simple conversion between slices of primitives and byte arrays without unsafe code
+  2. Simple and fast conversion from one endianness to the other one
 
-Provides conversion on primitives, slices, Read, and Write.
-As a consequence, this crate simplifies writing primitive types to
-Read and Write objects, which only accept byte buffers per default.
+This simplifies writing binary data to files.
 
 
-It's tiny! The whole source code is literally 250 lines of Rust, 
+Also, it's tiny! The source code is literally 250 lines of Rust, 
 when counting neither documentation, tests nor benchmarks.
 
 # Usage
@@ -64,7 +66,8 @@ Convert slices in-place.
 This crate supports batch-writing slices with native speed 
 where the os has the matching endianness. Writing slices in `byteorder` 
 must be done manually, and may be slower than expected. 
-Also, the API of this crate looks simpler, because this crate is tiny.
+This crate does provide u8 and i8 slice operations for completeness.
+Also, the API of this crate looks simpler.
 
 # Why not use [endianness](https://crates.io/crates/endianness)?
 This crate has no runtime costs, just as `byteorder`.
