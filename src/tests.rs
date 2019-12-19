@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 
-use crate::Endian;
+use crate::prelude::*;
 use std::mem;
 
 #[test]

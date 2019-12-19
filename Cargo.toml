@@ -27,3 +27,7 @@ byteorder = "1.3.2"
 [[bench]]
 name = "benches"
 harness = false # FIXME what does this mean?
+
+[profile.bench]
+lto = true
+debug = true

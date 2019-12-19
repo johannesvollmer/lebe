@@ -12,16 +12,6 @@ when counting neither documentation, tests nor benchmarks.
 
 # Usage
 
-Convert slices in-place.
-```rust
-    use lebe::Endian;
-    
-    fn main(){
-        let mut numbers: &[i32] = &[ 32, 102, 420, 594 ];
-        numbers.make_le();
-    }
-```
-
 Write slices.
 ```rust
     use lebe::io::WriteEndian;
@@ -56,6 +46,16 @@ Read slices.
         
         let mut input_bytes: &[u8] = &[ 0, 3, 244, 1, 0, 3, 244, 1 ];
         input_bytes.read_le_into(&mut numbers).unwrap();
+    }
+```
+
+Convert slices in-place.
+```rust
+    use lebe::Endian;
+    
+    fn main(){
+        let mut numbers: &[i32] = &[ 32, 102, 420, 594 ];
+        numbers.make_le();
     }
 ```
 
