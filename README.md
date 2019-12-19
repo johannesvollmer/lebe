@@ -38,7 +38,7 @@ Read numbers.
 
 Read slices.
 ```rust
-    use lebe::io::ReadEndian;
+    use lebe::io::ReadEndianInto;
     use std::io::Read;
     
     fn main(){
@@ -51,7 +51,7 @@ Read slices.
 
 Convert slices in-place.
 ```rust
-    use lebe::Endian;
+    use lebe::MakeEndian;
     
     fn main(){
         let mut numbers: &[i32] = &[ 32, 102, 420, 594 ];

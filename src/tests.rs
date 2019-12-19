@@ -18,6 +18,8 @@ fn make_le_u32_slice() {
     else {
         assert_eq!(n_le, [n.swap_bytes()])
     }
+
+//    assert_eq!(n_le, byteorder::LittleEndian::from_)
 }
 
 #[test]

@@ -11,7 +11,7 @@
     clippy::all
 )]
 
-// #![doc(html_root_url = "https://docs.rs/half/1.4.0")]
+// #![doc(html_root_url = "https://docs.rs/lebe/0.1.0")]
 
 pub mod tests;
 
@@ -35,15 +35,14 @@ pub trait IntoEndian {
     #[inline] fn into_be(mut self) -> Self;
 }
 
-impl<T: MakeEndian> IntoEndian for T {
-    fn into_le(mut self) -> Self {
-        self.make_le();
-        self
+
+impl<T: IntoEndian> MakeEndian for T where T: Copy {
+    fn make_be(&mut self) {
+        *self = self.into_be();
     }
 
-    fn into_be(mut self) -> Self {
-        self.make_be();
-        self
+    fn make_le(&mut self) {
+        *self = self.into_le();
     }
 }
 
@@ -57,13 +56,13 @@ macro_rules! call_single_arg_macro_for_each {
 // implement this interface for primitive signed and unsigned integers
 macro_rules! implement_simple_primitive_endian {
     ($type: ident) => {
-        impl MakeEndian for $type {
-            fn make_be(&mut self) {
-                *self = self.to_be();
+        impl IntoEndian for $type {
+            fn into_le(self) -> Self {
+                self.to_le()
             }
 
-            fn make_le(&mut self) {
-                *self = self.to_le();
+            fn into_be(mut self) -> Self {
+                self.to_be()
             }
         }
     };
@@ -79,13 +78,21 @@ call_single_arg_macro_for_each! {
 // implement this interface for primitive floats, because they do not have a conversion in `std`
 macro_rules! implement_float_primitive_by_transmute {
     ($type: ident, $proxy: ident) => {
-        impl MakeEndian for $type {
-            fn make_be(&mut self) {
-                unsafe { &mut * (self as *mut Self as *mut $proxy) }.make_be();
+        impl IntoEndian for $type {
+            fn into_be(self) -> Self {
+                unsafe {
+                    let proxy: $proxy = *(&self as *const Self as *const $proxy);
+                    let proxy_be = proxy.into_be();
+                    *(&proxy_be as *const $proxy as *const Self)
+                }
             }
 
-            fn make_le(&mut self) {
-                unsafe { &mut * (self as *mut Self as *mut $proxy) }.make_le();
+            fn into_le(self) -> Self {
+                unsafe {
+                    let proxy: $proxy = *(&self as *const Self as *const $proxy);
+                    let proxy_be = proxy.into_le();
+                    *(&proxy_be as *const $proxy as *const Self)
+                }
             }
         }
     };
@@ -96,8 +103,6 @@ implement_float_primitive_by_transmute!(f32, u32);
 implement_float_primitive_by_transmute!(f64, u64);
 
 
-
-// implement this interface for slices, because they do not have a conversion in `std`
 impl<T: MakeEndian> MakeEndian for [T] {
     fn make_be(&mut self) {
         if cfg!(target_endian = "little") {
@@ -120,8 +125,64 @@ impl<T: MakeEndian> MakeEndian for [T] {
 
 
 pub mod io {
-    use super::MakeEndian;
+    use super::{ MakeEndian, IntoEndian };
     use std::io::{Read, Write, Result};
+
+    pub mod bytes {
+        use std::io::{Read, Write, Result};
+
+        #[inline]
+        pub unsafe fn slice_as_bytes<T>(value: &[T]) -> &[u8] {
+            std::slice::from_raw_parts(
+                value.as_ptr() as *const u8,
+                value.len() * std::mem::size_of::<T>()
+            )
+        }
+
+        #[inline]
+        pub unsafe fn slice_as_bytes_mut<T>(value: &mut [T]) -> &mut [u8] {
+            std::slice::from_raw_parts_mut(
+                value.as_mut_ptr() as *mut u8,
+                value.len() * std::mem::size_of::<T>()
+            )
+        }
+
+        #[inline]
+        pub unsafe fn value_as_bytes<T>(value: &T) -> &[u8] {
+            std::slice::from_raw_parts(
+                value as *const T as *const u8,
+                std::mem::size_of::<T>()
+            )
+        }
+
+        #[inline]
+        pub unsafe fn value_as_bytes_mut<T>(value: &mut T) ->&mut [u8] {
+            std::slice::from_raw_parts_mut(
+                value as *mut T as *mut u8,
+                std::mem::size_of::<T>()
+            )
+        }
+
+        #[inline]
+        pub unsafe fn write_slice<T>(write: &mut impl Write, value: &[T]) -> Result<()> {
+            write.write_all(slice_as_bytes(value))
+        }
+
+        #[inline]
+        pub unsafe fn read_slice<T>(read: &mut impl Read, value: &mut [T]) -> Result<()> {
+            read.read_exact(slice_as_bytes_mut(value))
+        }
+
+        #[inline]
+        pub unsafe fn write_value<T>(write: &mut impl Write, value: &T) -> Result<()> {
+            write.write_all(value_as_bytes(value))
+        }
+
+        #[inline]
+        pub unsafe fn read_value<T>(read: &mut impl Read, value: &mut T) -> Result<()> {
+            read.read_exact(value_as_bytes_mut(value))
+        }
+    }
 
     pub trait WriteEndian<T> {
         #[inline]
@@ -141,82 +202,37 @@ pub mod io {
 
     pub trait ReadEndian<T> {
         #[inline] fn read_le(&mut self) -> Result<T>;
-
         #[inline] fn read_be(&mut self) -> Result<T>;
     }
 
-    impl<T, W: ReadEndianInto<T>> ReadEndian<T> for W where T: Default {
-        #[inline]
-        fn read_le(&mut self) -> Result<T> {
-            let mut result = [ T::default() ];
-            self.read_le_into(&mut result)?;
-            let [ result ] = result;
-            Ok(result)
-        }
-
-        #[inline]
-        fn read_be(&mut self) -> Result<T> {
-            let mut result = [ T::default() ];
-            self.read_be_into(&mut result)?;
-            let [ result ] = result;
-            Ok(result)
-        }
-    }
-
-
-    #[inline]
-    unsafe fn as_bytes<T>(value: &[T]) -> &[u8] {
-        std::slice::from_raw_parts(
-            value.as_ptr() as *const u8,
-            value.len() * std::mem::size_of::<T>()
-        )
-    }
-
-    #[inline]
-    unsafe fn as_bytes_mut<T>(value: &mut [T]) ->&mut [u8] {
-        std::slice::from_raw_parts_mut(
-            value.as_mut_ptr() as *mut u8,
-            value.len() * std::mem::size_of::<T>()
-        )
-    }
-
-    #[inline]
-    unsafe fn write_transmuted_bytes<T>(write: &mut impl Write, value: &[T]) -> Result<()> {
-        write.write_all(as_bytes(value))
-    }
-
-    #[inline]
-    unsafe fn read_transmuted_bytes<T>(read: &mut impl Read, value: &mut [T]) -> Result<()> {
-        read.read_exact(as_bytes_mut(value))
-    }
 
     impl<W: Write> WriteEndian<i8> for W {
         fn write_le(&mut self, value: i8) -> Result<()> {
-            unsafe { write_transmuted_bytes(self, &[value]) }
+            unsafe { bytes::write_slice(self, &[value]) }
         }
 
         fn write_be(&mut self, value: i8) -> Result<()> {
-            unsafe { write_transmuted_bytes(self, &[value]) }
+            unsafe { bytes::write_slice(self, &[value]) }
         }
     }
 
     impl<W: Write> WriteEndian<&[i8]> for W {
         fn write_le(&mut self, value: &[i8]) -> Result<()> {
-            unsafe { write_transmuted_bytes(self, value) }
+            unsafe { bytes::write_slice(self, value) }
         }
 
         fn write_be(&mut self, value: &[i8]) -> Result<()> {
-            unsafe { write_transmuted_bytes(self, value) }
+            unsafe { bytes::write_slice(self, value) }
         }
     }
 
     impl<R: Read> ReadEndianInto<i8> for R {
         fn read_le_into(&mut self, value: &mut [i8]) -> Result<()> {
-            unsafe { read_transmuted_bytes(self, value) }
+            unsafe { bytes::read_slice(self, value) }
         }
 
         fn read_be_into(&mut self, value: &mut [i8]) -> Result<()> {
-            unsafe { read_transmuted_bytes(self, value) }
+            unsafe { bytes::read_slice( self, value) }
         }
     }
 
@@ -226,12 +242,28 @@ pub mod io {
             impl<W: Write> WriteEndian<$type> for W {
                 fn write_le(&mut self, mut value: $type) -> Result<()> {
                     value.make_le();
-                    unsafe { write_transmuted_bytes(self, &[value]) }
+                    unsafe { bytes::write_value(self, &value) }
                 }
 
                 fn write_be(&mut self, mut value: $type) -> Result<()> {
                     value.make_be();
-                    unsafe { write_transmuted_bytes(self, &[value]) }
+                    unsafe { bytes::write_value(self, &value) }
+                }
+            }
+
+            impl<W: Read> ReadEndian<$type> for W {
+                #[inline]
+                fn read_le(&mut self) -> Result<$type> {
+                    let mut result = $type ::default();
+                    unsafe { bytes::read_value(self, &mut result)?; }
+                    Ok(result.into_le())
+                }
+
+                #[inline]
+                fn read_be(&mut self) -> Result<$type> {
+                    let mut result = $type ::default();
+                    unsafe { bytes::read_value(self, &mut result)?; }
+                    Ok(result.into_be())
                 }
             }
         };
@@ -256,7 +288,7 @@ pub mod io {
                         Ok(())
                     }
                     else {
-                        unsafe { write_transmuted_bytes(self, value) }
+                        unsafe { bytes::write_slice(self, value) }
                     }
                 }
 
@@ -269,20 +301,20 @@ pub mod io {
                         Ok(())
                     }
                     else {
-                        unsafe { write_transmuted_bytes(self, value) }
+                        unsafe { bytes::write_slice(self, value) }
                     }
                 }
             }
 
             impl<R: Read> ReadEndianInto<$type> for R {
                 fn read_le_into(&mut self, value: &mut [$type]) -> Result<()> {
-                    unsafe { read_transmuted_bytes(self, value)? };
+                    unsafe { bytes::read_slice(self, value)? };
                     value.make_le();
                     Ok(())
                 }
 
                 fn read_be_into(&mut self, value: &mut [$type]) -> Result<()> {
-                    unsafe { read_transmuted_bytes(self, value)? };
+                    unsafe { bytes::read_slice(self, value)? };
                     value.make_be();
                     Ok(())
                 }
