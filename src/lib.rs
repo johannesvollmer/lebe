@@ -156,7 +156,8 @@ impl Endian for [f32] {
             */
 
 
-            // FIX ME this SIMD optimization makes no difference ... why?
+            // FIX ME this SIMD optimization makes no difference ... why? like, ZERO difference, not even worse
+            #[cfg(feature = "simd")]
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             unsafe {
                 if is_x86_feature_detected!("avx2") {

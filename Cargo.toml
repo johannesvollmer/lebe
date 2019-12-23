@@ -4,20 +4,23 @@ version = "0.1.0"
 edition = "2018"
 
 description = "Tiny, dead simple, high performance endianness conversions"
-categories = ["algorithms", "encoding"]
+categories = ["algorithms", "encoding", "filesystem", "parsing", ]
 keywords = ["byteorder", "endianness", "little endian", "big endian", "conversion"]
-authors = ["johannesvollmer"]
+authors = ["johannesvollmer <johannes596@t-online.de>"]
 
 documentation = "https://docs.rs/crate/lebe/"
-repository = "https://github.com/johannesvollmer/lebe-rs"
+repository = "https://github.com/johannesvollmer/lebe"
 readme = "README.md"
 license = "MIT"
 
 [badges]
 maintenance = { status = "actively-maintained" }
 
+[lib]
+doctest = true
+
 [features]
-# piston_image = [ "image" ]
+simd = []
 
 
 [dev-dependencies]
