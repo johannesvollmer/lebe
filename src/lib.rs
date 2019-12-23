@@ -11,35 +11,59 @@
 pub mod tests;
 
 pub mod prelude {
-    pub use super::{ MakeEndian, IntoEndian };
-    pub use super::io::{ WriteEndian, ReadEndian, ReadEndianInto };
+    pub use super::{ Endian };
+    pub use super::io::{ WriteEndian, ReadEndian };
 }
 
-pub trait MakeEndian {
-    /// Convert this object from little endian to big endian.
-    /// On big endian this is a no-op. On little endian the bytes are swapped.
-    #[inline] fn make_be(&mut self);
+pub trait Endian {
+    #[inline]
+    fn swap_bytes(&mut self);
 
-    /// Convert this object from little endian to big endian.
-    /// On little endian this is a no-op. On big endian the bytes are swapped.
-    #[inline] fn make_le(&mut self);
-}
-
-pub trait IntoEndian {
-    #[inline] fn into_le(mut self) -> Self;
-    #[inline] fn into_be(mut self) -> Self;
-}
-
-
-impl<T: IntoEndian> MakeEndian for T where T: Copy {
-    fn make_be(&mut self) {
-        *self = self.into_be();
+    #[inline] fn convert_current_to_little_endian(&mut self) {
+        #[cfg(target_endian = "big")] {
+            self.swap_bytes();
+        }
     }
 
-    fn make_le(&mut self) {
-        *self = self.into_le();
+    #[inline] fn convert_current_to_big_endian(&mut self) {
+        #[cfg(target_endian = "little")] {
+            self.swap_bytes();
+        }
+    }
+
+    #[inline] fn convert_little_endian_to_current(&mut self) {
+        #[cfg(target_endian = "big")] {
+            self.swap_bytes();
+        }
+    }
+
+    #[inline] fn convert_big_endian_to_current(&mut self) {
+        #[cfg(target_endian = "little")] {
+            self.swap_bytes();
+        }
+    }
+
+    #[inline] fn from_current_into_little_endian(mut self) -> Self where Self: Sized {
+        self.convert_current_to_big_endian();
+        self
+    }
+
+    #[inline] fn from_current_into_big_endian(mut self) -> Self where Self: Sized {
+        self.convert_current_to_big_endian();
+        self
+    }
+
+    #[inline] fn from_little_endian_into_current(mut self) -> Self where Self: Sized {
+        self.convert_little_endian_to_current();
+        self
+    }
+
+    #[inline] fn from_big_endian_into_current(mut self) -> Self where Self: Sized {
+        self.convert_big_endian_to_current();
+        self
     }
 }
+
 
 // call a macro for each argument
 macro_rules! call_single_arg_macro_for_each {
@@ -51,13 +75,9 @@ macro_rules! call_single_arg_macro_for_each {
 // implement this interface for primitive signed and unsigned integers
 macro_rules! implement_simple_primitive_endian {
     ($type: ident) => {
-        impl IntoEndian for $type {
-            fn into_le(self) -> Self {
-                self.to_le()
-            }
-
-            fn into_be(mut self) -> Self {
-                self.to_be()
+        impl Endian for $type {
+            fn swap_bytes(&mut self) {
+                *self = $type::swap_bytes(*self);
             }
         }
     };
@@ -73,20 +93,11 @@ call_single_arg_macro_for_each! {
 // implement this interface for primitive floats, because they do not have a conversion in `std`
 macro_rules! implement_float_primitive_by_transmute {
     ($type: ident, $proxy: ident) => {
-        impl IntoEndian for $type {
-            fn into_be(self) -> Self {
+        impl Endian for $type {
+            fn swap_bytes(&mut self) {
                 unsafe {
-                    let proxy: $proxy = *(&self as *const Self as *const $proxy);
-                    let proxy_be = proxy.into_be();
-                    *(&proxy_be as *const $proxy as *const Self)
-                }
-            }
-
-            fn into_le(self) -> Self {
-                unsafe {
-                    let proxy: $proxy = *(&self as *const Self as *const $proxy);
-                    let proxy_be = proxy.into_le();
-                    *(&proxy_be as *const $proxy as *const Self)
+                    let mut proxy: &mut $proxy = &mut *(self as *mut Self as *mut $proxy);
+                    proxy.swap_bytes();
                 }
             }
         }
@@ -99,20 +110,10 @@ implement_float_primitive_by_transmute!(f64, u64);
 
 macro_rules! implement_slice_by_element {
     ($type: ident) => {
-        impl MakeEndian for [$type] {
-            fn make_be(&mut self) {
-                if cfg!(target_endian = "little") {
-                    for number in self.iter_mut() { // TODO SIMD?
-                        number.make_be();
-                    }
-                }
-            }
-
-            fn make_le(&mut self) {
-                if cfg!(target_endian = "big") {
-                    for number in self.iter_mut() { // TODO SIMD?
-                        number.make_le();
-                    }
+        impl Endian for [$type] {
+            fn swap_bytes(&mut self) {
+                for number in self.iter_mut() { // TODO SIMD?
+                    number.swap_bytes();
                 }
             }
         }
@@ -124,8 +125,8 @@ call_single_arg_macro_for_each! {
     u16, u32, u64, u128, i16, i32, i64, i128, f64 // no f32
 }
 
-impl MakeEndian for [f32] {
-    fn make_be(&mut self) {
+impl Endian for [f32] {
+    fn swap_bytes(&mut self) {
         #[cfg(target_endian = "little")]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -138,7 +139,7 @@ impl MakeEndian for [f32] {
 
             // otherwise (no avx2 available)
             for number in self.iter_mut() {
-                number.make_be();
+                number.swap_bytes();
             }
 
             #[target_feature(enable = "avx2")]
@@ -173,15 +174,6 @@ impl MakeEndian for [f32] {
                 }
             }
         }
-
-    }
-
-    fn make_le(&mut self) {
-        if cfg!(target_endian = "big") {
-            for number in self.iter_mut() { // TODO SIMD?
-                number.make_le();
-            }
-        }
     }
 }
 
@@ -189,8 +181,9 @@ impl MakeEndian for [f32] {
 
 
 pub mod io {
-    use super::{ MakeEndian, IntoEndian };
+    use super::Endian;
     use std::io::{Read, Write, Result};
+    use crate::io::bytes::value_as_bytes;
 
     pub mod bytes {
         use std::io::{Read, Write, Result};
@@ -212,7 +205,7 @@ pub mod io {
         }
 
         #[inline]
-        pub unsafe fn value_as_bytes<T>(value: &T) -> &[u8] {
+        pub unsafe fn value_as_bytes<T: Sized>(value: &T) -> &[u8] {
             std::slice::from_raw_parts(
                 value as *const T as *const u8,
                 std::mem::size_of::<T>()
@@ -220,7 +213,7 @@ pub mod io {
         }
 
         #[inline]
-        pub unsafe fn value_as_bytes_mut<T>(value: &mut T) ->&mut [u8] {
+        pub unsafe fn value_as_bytes_mut<T: Sized>(value: &mut T) ->&mut [u8] {
             std::slice::from_raw_parts_mut(
                 value as *mut T as *mut u8,
                 std::mem::size_of::<T>()
@@ -238,98 +231,91 @@ pub mod io {
         }
 
         #[inline]
-        pub unsafe fn write_value<T>(write: &mut impl Write, value: &T) -> Result<()> {
+        pub unsafe fn write_value<T: Sized>(write: &mut impl Write, value: &T) -> Result<()> {
             write.write_all(value_as_bytes(value))
         }
 
         #[inline]
-        pub unsafe fn read_value<T>(read: &mut impl Read, value: &mut T) -> Result<()> {
+        pub unsafe fn read_value<T: Sized>(read: &mut impl Read, value: &mut T) -> Result<()> {
             read.read_exact(value_as_bytes_mut(value))
         }
     }
 
-    pub trait WriteEndian<T> {
+    pub trait WriteEndian<T: ?Sized> {
         #[inline]
-        fn write_le(&mut self, value: T) -> Result<()>;
+        fn write_as_little_endian(&mut self, value: &T) -> Result<()>;
 
         #[inline]
-        fn write_be(&mut self, value: T) -> Result<()>;
+        fn write_as_big_endian(&mut self, value: &T) -> Result<()>;
     }
 
-    pub trait ReadEndianInto<T> {
+    pub trait ReadEndian<T: ?Sized> {
         #[inline]
-        fn read_le_into(&mut self, value: &mut [T]) -> Result<()>;
+        fn read_from_little_endian_into(&mut self, value: &mut T) -> Result<()>;
 
         #[inline]
-        fn read_be_into(&mut self, value: &mut [T]) -> Result<()>;
-    }
+        fn read_from_big_endian_into(&mut self, value: &mut T) -> Result<()>;
 
-    pub trait ReadEndian<T> {
-        #[inline] fn read_le(&mut self) -> Result<T>;
-        #[inline] fn read_be(&mut self) -> Result<T>;
+        #[inline]
+        fn read_from_little_endian(&mut self) -> Result<T> where T: Sized + Default {
+            let mut value = T::default();
+            self.read_from_little_endian_into(&mut value)?;
+            Ok(value)
+        }
+
+        #[inline]
+        fn read_from_big_endian(&mut self) -> Result<T> where T: Sized + Default {
+            let mut value = T::default();
+            self.read_from_big_endian_into(&mut value)?;
+            Ok(value)
+        }
     }
 
 
     impl<W: Write> WriteEndian<i8> for W {
-        fn write_le(&mut self, value: i8) -> Result<()> {
-            unsafe { bytes::write_slice(self, &[value]) }
+        fn write_as_little_endian(&mut self, value: &i8) -> Result<()> {
+            unsafe { bytes::write_value(self, value) }
         }
 
-        fn write_be(&mut self, value: i8) -> Result<()> {
-            unsafe { bytes::write_slice(self, &[value]) }
+        fn write_as_big_endian(&mut self, value: &i8) -> Result<()> {
+            unsafe { bytes::write_value(self, value) }
         }
     }
 
-    impl<W: Write> WriteEndian<&[i8]> for W {
-        fn write_le(&mut self, value: &[i8]) -> Result<()> {
+    impl<W: Write> WriteEndian<[i8]> for W {
+        fn write_as_little_endian(&mut self, value: &[i8]) -> Result<()> {
             unsafe { bytes::write_slice(self, value) }
         }
 
-        fn write_be(&mut self, value: &[i8]) -> Result<()> {
+        fn write_as_big_endian(&mut self, value: &[i8]) -> Result<()> {
             unsafe { bytes::write_slice(self, value) }
         }
     }
-
-    impl<R: Read> ReadEndianInto<i8> for R {
-        fn read_le_into(&mut self, value: &mut [i8]) -> Result<()> {
-            unsafe { bytes::read_slice(self, value) }
-        }
-
-        fn read_be_into(&mut self, value: &mut [i8]) -> Result<()> {
-            unsafe { bytes::read_slice( self, value) }
-        }
-    }
-
 
     macro_rules! implement_simple_primitive_write {
         ($type: ident) => {
             impl<W: Write> WriteEndian<$type> for W {
-                fn write_le(&mut self, mut value: $type) -> Result<()> {
-                    value.make_le();
-                    unsafe { bytes::write_value(self, &value) }
+                fn write_as_little_endian(&mut self, mut value: &$type) -> Result<()> {
+                    unsafe { bytes::write_value(self, &value.from_current_into_little_endian()) }
                 }
 
-                fn write_be(&mut self, mut value: $type) -> Result<()> {
-                    value.make_be();
-                    unsafe { bytes::write_value(self, &value) }
+                fn write_as_big_endian(&mut self, mut value: &$type) -> Result<()> {
+                    unsafe { bytes::write_value(self, &value.from_current_into_big_endian()) }
                 }
             }
 
-            impl<W: Read> ReadEndian<$type> for W {
+            impl<R: Read> ReadEndian<$type> for R {
                 #[inline]
-                fn read_le(&mut self) -> Result<$type> {
-                    let mut result = $type ::default();
-                    unsafe { bytes::read_value(self, &mut result)?; }
-                    Ok(result.into_le())
+                fn read_from_little_endian_into(&mut self, value: &mut $type) -> Result<()> {
+                    unsafe { bytes::read_value(self, value) }
                 }
 
                 #[inline]
-                fn read_be(&mut self) -> Result<$type> {
-                    let mut result = $type ::default();
-                    unsafe { bytes::read_value(self, &mut result)?; }
-                    Ok(result.into_be())
+                fn read_from_big_endian_into(&mut self, value: &mut $type) -> Result<()> {
+                    unsafe { bytes::read_value(self, value) }
                 }
             }
+
         };
     }
 
@@ -342,45 +328,45 @@ pub mod io {
 
     macro_rules! implement_slice_io {
         ($type: ident) => {
-            // this assumes buffered writers are used!
-            impl<W: Write> WriteEndian<&[$type]> for W {
-                fn write_le(&mut self, value: &[$type]) -> Result<()> {
-                    if cfg!(target_endian = "big") {
-                        for &number in value { // TODO SIMD?
-                            self.write_le(number)?;
+
+            impl<W: Write> WriteEndian<[$type]> for W {
+                fn write_as_little_endian(&mut self, value: &[$type]) -> Result<()> {
+                    #[cfg(target_endian = "big")] {
+                        for number in value { // TODO SIMD!
+                            self.write_as_little_endian(number)?;
                         }
 
-                        Ok(())
+                        return Ok(());
                     }
-                    else {
-                        unsafe { bytes::write_slice(self, value) }
-                    }
+
+                    // else write whole slice
+                    unsafe { bytes::write_slice(self, value) }
                 }
 
-                fn write_be(&mut self, value: &[$type]) -> Result<()> {
-                    if cfg!(target_endian = "little") {
-                        for &number in value { // TODO SIMD?
-                            self.write_be(number)?;
+                fn write_as_big_endian(&mut self, mut value: &[$type]) -> Result<()> {
+                    #[cfg(target_endian = "little")] {
+                        for number in value { // TODO SIMD!
+                            self.write_as_big_endian(number)?;
                         }
 
-                        Ok(())
+                        return Ok(());
                     }
-                    else {
-                        unsafe { bytes::write_slice(self, value) }
-                    }
+
+                    // else write whole slice
+                    unsafe { bytes::write_slice(self, value) }
                 }
             }
 
-            impl<R: Read> ReadEndianInto<$type> for R {
-                fn read_le_into(&mut self, value: &mut [$type]) -> Result<()> {
+            impl<R: Read> ReadEndian<[$type]> for R {
+                fn read_from_little_endian_into(&mut self, value: &mut [$type]) -> Result<()> {
                     unsafe { bytes::read_slice(self, value)? };
-                    value.make_le();
+                    value.convert_little_endian_to_current();
                     Ok(())
                 }
 
-                fn read_be_into(&mut self, value: &mut [$type]) -> Result<()> {
+                fn read_from_big_endian_into(&mut self, value: &mut [$type]) -> Result<()> {
                     unsafe { bytes::read_slice(self, value)? };
-                    value.make_be();
+                    value.convert_big_endian_to_current();
                     Ok(())
                 }
             }
