@@ -9,9 +9,6 @@ This crate has exactly two purposes:
 This simplifies writing binary data to files.
 
 
-Also, it's tiny! The source code is literally 250 lines of Rust, 
-when counting neither documentation, tests nor benchmarks.
-
 # Usage
 
 Write slices.
@@ -23,7 +20,7 @@ Write slices.
         let numbers: &[i32] = &[ 32, 102, 420, 594 ];
         
         let mut output_bytes: Vec<u8> = Vec::new();
-        output_bytes.write_le(numbers).unwrap();
+        output_bytes.write_as_little_endian(numbers).unwrap();
     }
 ```
 
@@ -34,30 +31,30 @@ Read numbers.
     
     fn main(){
         let mut input_bytes: &[u8] = &[ 3, 244 ];
-        let number: u16 = input_bytes.read_le().unwrap();
+        let number: u16 = input_bytes.read_from_little_endian().unwrap();
     }
 ```
 
 Read slices.
 ```rust
-    use lebe::io::ReadEndianInto;
+    use lebe::io::ReadEndian;
     use std::io::Read;
     
     fn main(){
         let mut numbers: &[i32] = &[ 0; 2 ];
         
         let mut input_bytes: &[u8] = &[ 0, 3, 244, 1, 0, 3, 244, 1 ];
-        input_bytes.read_le_into(&mut numbers).unwrap();
+        input_bytes.read_from_little_endian_into(&mut numbers).unwrap();
     }
 ```
 
 Convert slices in-place.
 ```rust
-    use lebe::MakeEndian;
+    use lebe::Endian;
     
     fn main(){
         let mut numbers: &[i32] = &[ 32, 102, 420, 594 ];
-        numbers.make_le();
+        numbers.convert_from_current_to_little_endian();
     }
 ```
 

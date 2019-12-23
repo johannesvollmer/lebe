@@ -114,10 +114,10 @@ fn read_slice_baseline(bench: &mut Bencher) {
 
 fn write_slice_baseline(bench: &mut Bencher) {
     bench.iter(move ||{
-        let data = bytes(COUNT_8);
+        let data = bytes(COUNT_8).into_inner();
         let mut output = Vec::with_capacity(COUNT_8);
 
-        bencher::black_box(output.write_all(data.into_inner().as_slice())).unwrap();
+        bencher::black_box(output.write_all(data.as_slice())).unwrap();
         bencher::black_box(output);
     })
 }

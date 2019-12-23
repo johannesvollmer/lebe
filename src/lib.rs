@@ -129,6 +129,34 @@ impl Endian for [f32] {
     fn swap_bytes(&mut self) {
         #[cfg(target_endian = "little")]
         {
+            /*
+            with simd:
+                test read_slice_baseline          ... bench:   2,626,792 ns/iter (+/- 816,840)
+                test read_slice_f32_be_byteorder  ... bench:   2,633,617 ns/iter (+/- 571,687)
+                test read_slice_f32_be_crate      ... bench:   2,515,297 ns/iter (+/- 1,650,939)
+                test read_slice_f32_le_byteorder  ... bench:   2,262,485 ns/iter (+/- 1,460,366)
+                test read_slice_f32_le_crate      ... bench:   2,328,342 ns/iter (+/- 851,733)
+                test write_slice_baseline         ... bench:   2,064,107 ns/iter (+/- 230,779)
+                test write_slice_f32_be_byteorder ... bench:   3,882,385 ns/iter (+/- 1,103,729)
+                test write_slice_f32_be_crate     ... bench:   2,546,017 ns/iter (+/- 252,575)
+                test write_slice_f32_le_byteorder ... bench:   3,550,125 ns/iter (+/- 388,437)
+                test write_slice_f32_le_crate     ... bench:   1,891,302 ns/iter (+/- 594,722)
+
+            without simd:
+                test read_slice_baseline          ... bench:   2,337,835 ns/iter (+/- 645,782)
+                test read_slice_f32_be_byteorder  ... bench:   2,299,995 ns/iter (+/- 288,691)
+                test read_slice_f32_be_crate      ... bench:   2,315,692 ns/iter (+/- 248,317)
+                test read_slice_f32_le_byteorder  ... bench:   2,055,587 ns/iter (+/- 377,853)
+                test read_slice_f32_le_crate      ... bench:   2,424,600 ns/iter (+/- 949,144)
+                test write_slice_baseline         ... bench:   2,284,342 ns/iter (+/- 883,520)
+                test write_slice_f32_be_byteorder ... bench:   4,721,595 ns/iter (+/- 2,411,315)
+                test write_slice_f32_be_crate     ... bench:   2,560,367 ns/iter (+/- 222,226)
+                test write_slice_f32_le_byteorder ... bench:   3,483,840 ns/iter (+/- 508,871)
+                test write_slice_f32_le_crate     ... bench:   1,754,372 ns/iter (+/- 141,829)
+            */
+
+
+            // FIX ME this SIMD optimization makes no difference ... why?
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             unsafe {
                 if is_x86_feature_detected!("avx2") {
