@@ -1,14 +1,9 @@
 #![warn(
     missing_docs,
-    missing_copy_implementations,
-    missing_debug_implementations,
     trivial_numeric_casts,
-    unused_extern_crates,
-    unused_import_braces,
-    future_incompatible,
-    rust_2018_compatibility,
-    rust_2018_idioms,
-    clippy::all
+    unused_extern_crates, unused_import_braces,
+    future_incompatible, rust_2018_compatibility,
+    rust_2018_idioms, clippy::all
 )]
 
 // #![doc(html_root_url = "https://docs.rs/lebe/0.1.0")]
@@ -102,14 +97,83 @@ macro_rules! implement_float_primitive_by_transmute {
 implement_float_primitive_by_transmute!(f32, u32);
 implement_float_primitive_by_transmute!(f64, u64);
 
+macro_rules! implement_slice_by_element {
+    ($type: ident) => {
+        impl MakeEndian for [$type] {
+            fn make_be(&mut self) {
+                if cfg!(target_endian = "little") {
+                    for number in self.iter_mut() { // TODO SIMD?
+                        number.make_be();
+                    }
+                }
+            }
 
-impl<T: MakeEndian> MakeEndian for [T] {
-    fn make_be(&mut self) {
-        if cfg!(target_endian = "little") {
-            for number in self.iter_mut() { // TODO SIMD?
-                number.make_be();
+            fn make_le(&mut self) {
+                if cfg!(target_endian = "big") {
+                    for number in self.iter_mut() { // TODO SIMD?
+                        number.make_le();
+                    }
+                }
             }
         }
+    };
+}
+
+call_single_arg_macro_for_each! {
+    implement_slice_by_element,
+    u16, u32, u64, u128, i16, i32, i64, i128, f64 // no f32
+}
+
+impl MakeEndian for [f32] {
+    fn make_be(&mut self) {
+        #[cfg(target_endian = "little")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            unsafe {
+                if is_x86_feature_detected!("avx2") {
+                    swap_bytes_avx(self);
+                    return;
+                }
+            }
+
+            // otherwise (no avx2 available)
+            for number in self.iter_mut() {
+                number.make_be();
+            }
+
+            #[target_feature(enable = "avx2")]
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            unsafe fn swap_bytes_avx(slice: &mut [f32]){
+                #[cfg(target_arch = "x86")] use std::arch::x86 as mm;
+                #[cfg(target_arch = "x86_64")] use std::arch::x86_64 as mm;
+
+                let bytes: &mut [u8] = self::io::bytes::slice_as_bytes_mut(slice);
+                let mut chunks = bytes.chunks_exact_mut(32);
+
+                let indices = mm::_mm256_set_epi8(
+                    3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12,
+                    3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
+                );
+
+                for chunk in &mut chunks {
+                    let data = mm::_mm256_loadu_si256(chunk.as_ptr() as _);
+                    let result = mm::_mm256_shuffle_epi8(data, indices);
+                    mm::_mm256_storeu_si256(chunk.as_mut_ptr() as _, result);
+                }
+
+                let remainder = chunks.into_remainder();
+
+                { // copy remainder into larger slice, with zeroes at the end
+                    let mut last_chunk = [0_u8; 32];
+                    last_chunk[0..remainder.len()].copy_from_slice(remainder);
+                    let data = mm::_mm256_loadu_si256(last_chunk.as_ptr() as _);
+                    let result = mm::_mm256_shuffle_epi8(data, indices);
+                    mm::_mm256_storeu_si256(last_chunk.as_mut_ptr() as _, result);
+                    remainder.copy_from_slice(&last_chunk[0..remainder.len()]);
+                }
+            }
+        }
+
     }
 
     fn make_le(&mut self) {
@@ -273,6 +337,7 @@ pub mod io {
         implement_simple_primitive_write,
         u16, u32, u64, u128, i16, i32, i64, i128, f32, f64
     }
+
 
 
     macro_rules! implement_slice_io {
