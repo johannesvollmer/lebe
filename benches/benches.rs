@@ -6,7 +6,7 @@ use lebe::prelude::*;
 use byteorder::{ReadBytesExt, LittleEndian, BigEndian, WriteBytesExt};
 use std::io::{Read, Write, Cursor};
 
-const COUNT_8:  usize = 2048 * 1024;
+const COUNT_8:  usize = 2048 * 2048;
 const COUNT_16: usize = COUNT_8 / 2;
 const COUNT_32: usize = COUNT_8 / 4;
 const COUNT_64: usize = COUNT_8 / 8;

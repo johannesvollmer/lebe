@@ -89,6 +89,11 @@ call_single_arg_macro_for_each! {
     u16, u32, u64, u128, i16, i32, i64, i128
 }
 
+// no-op implementations
+impl Endian for u8 { fn swap_bytes(&mut self) {} }
+impl Endian for i8 { fn swap_bytes(&mut self) {} }
+impl Endian for [u8] { fn swap_bytes(&mut self) {} }
+impl Endian for [i8] { fn swap_bytes(&mut self) {} }
 
 // implement this interface for primitive floats, because they do not have a conversion in `std`
 macro_rules! implement_float_primitive_by_transmute {
@@ -122,7 +127,9 @@ macro_rules! implement_slice_by_element {
 
 call_single_arg_macro_for_each! {
     implement_slice_by_element,
-    u16, u32, u64, u128, i16, i32, i64, i128, f64 // no f32
+    u16, u32, u64, u128,
+    i16, i32, i64, i128,
+    f64 // custom simd f32
 }
 
 impl Endian for [f32] {
@@ -300,27 +307,6 @@ pub mod io {
         }
     }
 
-
-    impl<W: Write> WriteEndian<i8> for W {
-        fn write_as_little_endian(&mut self, value: &i8) -> Result<()> {
-            unsafe { bytes::write_value(self, value) }
-        }
-
-        fn write_as_big_endian(&mut self, value: &i8) -> Result<()> {
-            unsafe { bytes::write_value(self, value) }
-        }
-    }
-
-    impl<W: Write> WriteEndian<[i8]> for W {
-        fn write_as_little_endian(&mut self, value: &[i8]) -> Result<()> {
-            unsafe { bytes::write_slice(self, value) }
-        }
-
-        fn write_as_big_endian(&mut self, value: &[i8]) -> Result<()> {
-            unsafe { bytes::write_slice(self, value) }
-        }
-    }
-
     macro_rules! implement_simple_primitive_write {
         ($type: ident) => {
             impl<W: Write> WriteEndian<$type> for W {
@@ -344,20 +330,19 @@ pub mod io {
                     unsafe { bytes::read_value(self, value) }
                 }
             }
-
         };
     }
 
     call_single_arg_macro_for_each! {
         implement_simple_primitive_write,
-        u16, u32, u64, u128, i16, i32, i64, i128, f32, f64
+        u8, u16, u32, u64, u128,
+        i8, i16, i32, i64, i128,
+        f32, f64
     }
-
 
 
     macro_rules! implement_slice_io {
         ($type: ident) => {
-
             impl<W: Write> WriteEndian<[$type]> for W {
                 fn write_as_little_endian(&mut self, value: &[$type]) -> Result<()> {
                     #[cfg(target_endian = "big")] {
@@ -404,8 +389,9 @@ pub mod io {
 
     call_single_arg_macro_for_each! {
         implement_slice_io,
-        u16, u32, u64, u128, i16, i32, i64, i128, f32, f64
+        u8, u16, u32, u64, u128,
+        i8, i16, i32, i64, i128,
+        f32, f64
     }
-
 }
 
