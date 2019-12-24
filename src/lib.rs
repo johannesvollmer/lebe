@@ -12,7 +12,7 @@ pub mod tests;
 
 pub mod prelude {
     pub use super::Endian;
-    pub use super::io::{ WriteEndian, ReadEndian };
+    pub use super::io::{ WriteEndian, ReadEndian, ReadPrimitives };
 }
 
 pub trait Endian {
