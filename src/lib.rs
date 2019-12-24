@@ -11,7 +11,7 @@
 pub mod tests;
 
 pub mod prelude {
-    pub use super::{ Endian };
+    pub use super::Endian;
     pub use super::io::{ WriteEndian, ReadEndian };
 }
 
@@ -101,7 +101,7 @@ macro_rules! implement_float_primitive_by_transmute {
         impl Endian for $type {
             fn swap_bytes(&mut self) {
                 unsafe {
-                    let mut proxy: &mut $proxy = &mut *(self as *mut Self as *mut $proxy);
+                    let proxy: &mut $proxy = &mut *(self as *mut Self as *mut $proxy);
                     proxy.swap_bytes();
                 }
             }
@@ -219,7 +219,6 @@ impl Endian for [f32] {
 pub mod io {
     use super::Endian;
     use std::io::{Read, Write, Result};
-    use crate::io::bytes::value_as_bytes;
 
     pub mod bytes {
         use std::io::{Read, Write, Result};
@@ -307,14 +306,42 @@ pub mod io {
         }
     }
 
+    macro_rules! primitive_read_fn {
+        ($l_name: ident, $b_name: ident, $type: ident) => {
+            fn $l_name (&mut self) -> Result<$type> where Self: ReadEndian<$type> { self.read_from_little_endian() }
+            fn $b_name (&mut self) -> Result<$type> where Self: ReadEndian<$type>  { self.read_from_big_endian() }
+        };
+    }
+
+    pub trait ReadPrimitives: Read {
+        primitive_read_fn! { read_little_endian_u8, read_big_endian_u8, u8 }
+        primitive_read_fn! { read_little_endian_i8, read_big_endian_i8, i8 }
+
+        primitive_read_fn! { read_little_endian_i16, read_big_endian_i16, i16 }
+        primitive_read_fn! { read_little_endian_u16, read_big_endian_u16, u16 }
+
+        primitive_read_fn! { read_little_endian_i32, read_big_endian_i32, i32 }
+        primitive_read_fn! { read_little_endian_u32, read_big_endian_u32, u32 }
+
+        primitive_read_fn! { read_little_endian_i64, read_big_endian_i64, i64 }
+        primitive_read_fn! { read_little_endian_u64, read_big_endian_u64, u64 }
+
+        primitive_read_fn! { read_little_endian_i128, read_big_endian_i28, i128 }
+        primitive_read_fn! { read_little_endian_u128, read_big_endian_u128, u128 }
+
+        primitive_read_fn! { read_little_endian_f32, read_big_endian_f32, f32 }
+        primitive_read_fn! { read_little_endian_f64, read_big_endian_f64, f64 }
+    }
+
+
     macro_rules! implement_simple_primitive_write {
         ($type: ident) => {
             impl<W: Write> WriteEndian<$type> for W {
-                fn write_as_little_endian(&mut self, mut value: &$type) -> Result<()> {
+                fn write_as_little_endian(&mut self, value: &$type) -> Result<()> {
                     unsafe { bytes::write_value(self, &value.from_current_into_little_endian()) }
                 }
 
-                fn write_as_big_endian(&mut self, mut value: &$type) -> Result<()> {
+                fn write_as_big_endian(&mut self, value: &$type) -> Result<()> {
                     unsafe { bytes::write_value(self, &value.from_current_into_big_endian()) }
                 }
             }
@@ -349,25 +376,27 @@ pub mod io {
                         for number in value { // TODO SIMD!
                             self.write_as_little_endian(number)?;
                         }
-
-                        return Ok(());
                     }
 
                     // else write whole slice
-                    unsafe { bytes::write_slice(self, value) }
+                    #[cfg(target_endian = "little")]
+                    unsafe { bytes::write_slice(self, value)?; }
+
+                    Ok(())
                 }
 
-                fn write_as_big_endian(&mut self, mut value: &[$type]) -> Result<()> {
+                fn write_as_big_endian(&mut self, value: &[$type]) -> Result<()> {
                     #[cfg(target_endian = "little")] {
                         for number in value { // TODO SIMD!
                             self.write_as_big_endian(number)?;
                         }
-
-                        return Ok(());
                     }
 
                     // else write whole slice
-                    unsafe { bytes::write_slice(self, value) }
+                    #[cfg(target_endian = "big")]
+                    unsafe { bytes::write_slice(self, value)?; }
+
+                    Ok(())
                 }
             }
 
