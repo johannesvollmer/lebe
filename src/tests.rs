@@ -3,7 +3,7 @@
 
 use crate::prelude::*;
 use std::mem;
-use byteorder::{WriteBytesExt, LittleEndian, BigEndian};
+use byteorder::{WriteBytesExt, LittleEndian, BigEndian, ReadBytesExt};
 
 #[test]
 fn make_le_u32_slice() {
@@ -106,7 +106,18 @@ fn into_be_i16() {
 }
 
 #[test]
-fn cmp_byteorder_be() {
+fn cmp_read_be_u16() {
+    let read: &[u8] = &[0x33, 0xbb];
+    let a = read.clone().read_u16_from_big_endian().unwrap();
+    let b: u16 = read.clone().read_from_big_endian().unwrap();
+    let c = read.clone().read_u16::<BigEndian>().unwrap();
+
+    assert_eq!(a, b);
+    assert_eq!(a, c);
+}
+
+#[test]
+fn cmp_read_be_slice()  {
     let mut write_expected = Vec::new();
     let mut write_actual = Vec::new();
 
@@ -118,11 +129,15 @@ fn cmp_byteorder_be() {
 
     write_actual.write_as_big_endian(data.as_slice()).unwrap();
 
+    println!("before: {:?}", unsafe { crate::io::bytes::slice_as_bytes(data.as_slice()) });
+    println!("crate: {:?}", write_actual);
+    println!("expected: {:?}", write_expected);
+
     assert_eq!(write_actual, write_expected);
 }
 
 #[test]
-fn cmp_byteorder_le() {
+fn cmp_write_le_slice() {
     let mut write_expected = Vec::new();
     let mut write_actual = Vec::new();
 

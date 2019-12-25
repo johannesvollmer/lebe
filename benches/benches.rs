@@ -6,7 +6,7 @@ use lebe::prelude::*;
 use byteorder::{ReadBytesExt, LittleEndian, BigEndian, WriteBytesExt};
 use std::io::{Read, Write, Cursor};
 
-const COUNT_8:  usize = 2048 * 2048;
+const COUNT_8:  usize = 2048;
 const COUNT_16: usize = COUNT_8 / 2;
 const COUNT_32: usize = COUNT_8 / 4;
 const COUNT_64: usize = COUNT_8 / 8;
@@ -53,13 +53,14 @@ fn read_slice_f32_be_byteorder(bench: &mut Bencher) {
     })
 }
 
-
+// FIXME faster than baseline?!?!!
 fn write_slice_f32_le_crate(bench: &mut Bencher) {
     bench.iter(move ||{
         let data = floats(COUNT_32);
         let mut output = Vec::with_capacity(COUNT_8);
 
         bencher::black_box(output.write_as_little_endian(data.as_slice())).unwrap();
+        assert_eq!(output.len(), COUNT_8);
         bencher::black_box(output);
     })
 }
@@ -73,6 +74,7 @@ fn write_slice_f32_le_byteorder(bench: &mut Bencher) {
             bencher::black_box(output.write_f32::<LittleEndian>(number)).unwrap();
         }
 
+        assert_eq!(output.len(), COUNT_8);
         bencher::black_box(output);
     })
 }
@@ -84,6 +86,7 @@ fn write_slice_f32_be_crate(bench: &mut Bencher) {
         let mut output = Vec::with_capacity(COUNT_8);
 
         bencher::black_box(output.write_as_big_endian(data.as_slice())).unwrap();
+        assert_eq!(output.len(), COUNT_8);
         bencher::black_box(output);
     })
 }
@@ -97,6 +100,7 @@ fn write_slice_f32_be_byteorder(bench: &mut Bencher) {
             bencher::black_box(output.write_f32::<BigEndian>(number)).unwrap();
         }
 
+        assert_eq!(output.len(), COUNT_8);
         bencher::black_box(output);
     })
 }
