@@ -106,11 +106,46 @@ fn into_be_i16() {
 }
 
 #[test]
+fn into_be_u32() {
+    let i = 0x1220943_u32;
+    let be = i.from_current_into_big_endian();
+
+    if cfg!(target_endian = "big") {
+        assert_eq!(be, i)
+    }
+    else {
+        assert_eq!(be, i.swap_bytes())
+    }
+}
+
+#[test]
 fn cmp_read_be_u16() {
     let read: &[u8] = &[0x33, 0xbb];
     let a = read.clone().read_u16_from_big_endian().unwrap();
     let b: u16 = read.clone().read_from_big_endian().unwrap();
     let c = read.clone().read_u16::<BigEndian>().unwrap();
+
+    assert_eq!(a, b);
+    assert_eq!(a, c);
+}
+
+#[test]
+fn cmp_read_le_u16() {
+    let read: &[u8] = &[0x33, 0xbb];
+    let a = read.clone().read_u16_from_little_endian().unwrap();
+    let b: u16 = read.clone().read_from_little_endian().unwrap();
+    let c = read.clone().read_u16::<LittleEndian>().unwrap();
+
+    assert_eq!(a, b);
+    assert_eq!(a, c);
+}
+
+#[test]
+fn cmp_read_le_f32() {
+    let read: &[u8] = &[0x33, 0xBB, 0x44, 0xCC];
+    let a = read.clone().read_f32_from_little_endian().unwrap();
+    let b: f32 = read.clone().read_from_little_endian().unwrap();
+    let c = read.clone().read_f32::<LittleEndian>().unwrap();
 
     assert_eq!(a, b);
     assert_eq!(a, c);
@@ -128,11 +163,6 @@ fn cmp_read_be_slice()  {
     }
 
     write_actual.write_as_big_endian(data.as_slice()).unwrap();
-
-    println!("before: {:?}", unsafe { crate::io::bytes::slice_as_bytes(data.as_slice()) });
-    println!("crate: {:?}", write_actual);
-    println!("expected: {:?}", write_expected);
-
     assert_eq!(write_actual, write_expected);
 }
 
@@ -152,3 +182,14 @@ fn cmp_write_le_slice() {
     assert_eq!(write_actual, write_expected);
 }
 
+#[test]
+fn cmp_write_le_u32() {
+    let mut write_expected = Vec::new();
+    let mut write_actual = Vec::new();
+
+    let data = 0x23573688_u32;
+    write_expected.write_u32::<LittleEndian>(data).unwrap();
+    write_actual.write_as_little_endian(&data).unwrap();
+
+    assert_eq!(write_actual, write_expected);
+}

@@ -44,7 +44,7 @@ pub trait Endian {
     }
 
     #[inline] fn from_current_into_little_endian(mut self) -> Self where Self: Sized {
-        self.convert_current_to_big_endian();
+        self.convert_current_to_little_endian();
         self
     }
 
