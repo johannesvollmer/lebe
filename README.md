@@ -6,20 +6,21 @@ This crate has exactly two purposes:
   1. Simple conversion between slices of primitives and byte arrays without unsafe code
   2. Simple and fast conversion from one endianness to the other one
 
-This simplifies writing binary data to files.
+This simplifies reading and writing binary data to files or network streams.
 
 
 # Usage
 
-Write slices.
+Write values.
 ```rust
     use lebe::io::WriteEndian;
     use std::io::Write;
     
     fn main(){
-        let numbers: &[i32] = &[ 32, 102, 420, 594 ];
-        
         let mut output_bytes: Vec<u8> = Vec::new();
+
+        let numbers: &[i32] = &[ 32, 102, 420, 594 ];
+        output_bytes.write_as_little_endian(output_bytes.len()).unwrap();
         output_bytes.write_as_little_endian(numbers).unwrap();
     }
 ```
@@ -41,10 +42,12 @@ Read slices.
     use std::io::Read;
     
     fn main(){
-        let mut numbers: &[i32] = &[ 0; 2 ];
+        let mut input_bytes: &[u8] = &[ 0, 2, 0, 3, 244, 1, 0, 3, 244, 1 ];
         
-        let mut input_bytes: &[u8] = &[ 0, 3, 244, 1, 0, 3, 244, 1 ];
-        input_bytes.read_from_little_endian_into(&mut numbers).unwrap();
+        let len: u16 = input_bytes.read_from_little_endian().unwrap();
+        let mut numbers = vec![ 0.0; len ];
+        
+        input_bytes.read_from_little_endian_into(numbers.as_mut_slice()).unwrap();
     }
 ```
 
@@ -54,7 +57,7 @@ Convert slices in-place.
     
     fn main(){
         let mut numbers: &[i32] = &[ 32, 102, 420, 594 ];
-        numbers.convert_from_current_to_little_endian();
+        numbers.convert_current_to_little_endian();
     }
 ```
 
@@ -70,8 +73,7 @@ Also, the API of this crate looks simpler.
 This crate has no runtime costs, just as `byteorder`.
 
 # Why not use this crate?
-This crate requires a fairly up-to-date rust version, 
-which not all projects can support.
+The other crates probably have better documentation.
 
 
 # Fun Facts
