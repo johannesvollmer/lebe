@@ -8,8 +8,6 @@
 
 // #![doc(html_root_url = "https://docs.rs/lebe/0.1.0")]
 
-pub mod tests;
-
 pub mod prelude {
     pub use super::Endian;
     pub use super::io::{ WriteEndian, ReadEndian, ReadPrimitives };

@@ -1,8 +1,8 @@
-#![cfg(test)]
+extern crate lebe;
 
-
-use crate::prelude::*;
+use lebe::prelude::*;
 use std::mem;
+
 use byteorder::{WriteBytesExt, LittleEndian, BigEndian, ReadBytesExt};
 
 #[test]
@@ -190,6 +190,24 @@ fn cmp_write_le_u32() {
     let data = 0x23573688_u32;
     write_expected.write_u32::<LittleEndian>(data).unwrap();
     write_actual.write_as_little_endian(&data).unwrap();
+
+    assert_eq!(write_actual, write_expected);
+}
+
+
+
+#[test]
+fn cmp_write_le_slice_u64() {
+    let mut write_expected = Vec::new();
+    let mut write_actual = Vec::new();
+
+    let data: Vec<u64> = (1000..1000+310*31).map(|i| i as u64).collect();
+
+    for number in &data {
+        write_expected.write_u64::<LittleEndian>(*number).unwrap();
+    }
+
+    write_actual.write_as_little_endian(data.as_slice()).unwrap();
 
     assert_eq!(write_actual, write_expected);
 }
