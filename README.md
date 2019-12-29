@@ -20,7 +20,7 @@ Write values.
         let mut output_bytes: Vec<u8> = Vec::new();
 
         let numbers: &[i32] = &[ 32, 102, 420, 594 ];
-        output_bytes.write_as_little_endian(output_bytes.len()).unwrap();
+        output_bytes.write_as_little_endian(numbers.len()).unwrap();
         output_bytes.write_as_little_endian(numbers).unwrap();
     }
 ```
