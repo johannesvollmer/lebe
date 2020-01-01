@@ -10,7 +10,7 @@
 
 pub mod prelude {
     pub use super::Endian;
-    pub use super::io::{ WriteEndian, ReadEndian, ReadPrimitives };
+    pub use super::io::{ WriteEndian, ReadEndian, ReadPrimitive };
 }
 
 pub trait Endian {
@@ -220,19 +220,22 @@ pub mod io {
         }
     }
 
-    
 
-    pub trait ReadPrimitive {
-        fn read_from_little_endian(read: &mut impl Read + ReadEndian<Self>) -> Result<Self> {
+
+    impl<R: Read + ReadEndian<P>, P: Default> ReadPrimitive<R> for P {}
+
+    pub trait ReadPrimitive<R: Read + ReadEndian<Self>> : Sized + Default {
+        fn read_from_little_endian(read: &mut R) -> Result<Self> {
             read.read_from_little_endian()
         }
 
-        fn read_from_big_endian(read: &mut impl Read + ReadEndian<Self>) -> Result<Self> {
+        fn read_from_big_endian(read: &mut R) -> Result<Self> {
             read.read_from_big_endian()
         }
     }
 
-    impl<R: Read, P> ReadPrimitive for P where R: ReadEndian<P> {}
+
+
 
     macro_rules! implement_simple_primitive_write {
         ($type: ident) => {

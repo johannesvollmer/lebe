@@ -45,7 +45,7 @@ Read slices.
         let mut input_bytes: &[u8] = &[ 0, 2, 0, 3, 244, 1, 0, 3, 244, 1 ];
         
         let len: u16 = input_bytes.read_from_little_endian().unwrap();
-        let mut numbers = vec![ 0.0; len ];
+        let mut numbers = vec![ 0.0; len as usize ];
         
         input_bytes.read_from_little_endian_into(numbers.as_mut_slice()).unwrap();
     }

@@ -121,7 +121,7 @@ fn into_be_u32() {
 #[test]
 fn cmp_read_be_u16() {
     let read: &[u8] = &[0x33, 0xbb];
-    let a = read.clone().read_u16_from_big_endian().unwrap();
+    let a = u16::read_from_big_endian(&mut read.clone()).unwrap();
     let b: u16 = read.clone().read_from_big_endian().unwrap();
     let c = read.clone().read_u16::<BigEndian>().unwrap();
 
@@ -132,7 +132,7 @@ fn cmp_read_be_u16() {
 #[test]
 fn cmp_read_le_u16() {
     let read: &[u8] = &[0x33, 0xbb];
-    let a = read.clone().read_u16_from_little_endian().unwrap();
+    let a = u16::read_from_little_endian(&mut read.clone()).unwrap();
     let b: u16 = read.clone().read_from_little_endian().unwrap();
     let c = read.clone().read_u16::<LittleEndian>().unwrap();
 
@@ -143,7 +143,7 @@ fn cmp_read_le_u16() {
 #[test]
 fn cmp_read_le_f32() {
     let read: &[u8] = &[0x33, 0xBB, 0x44, 0xCC];
-    let a = read.clone().read_f32_from_little_endian().unwrap();
+    let a = f32::read_from_little_endian(&mut read.clone()).unwrap();
     let b: f32 = read.clone().read_from_little_endian().unwrap();
     let c = read.clone().read_f32::<LittleEndian>().unwrap();
 
