@@ -220,35 +220,19 @@ pub mod io {
         }
     }
 
-    macro_rules! primitive_read_fn {
-        ($l_name: ident, $b_name: ident, $type: ident) => {
-            fn $l_name (&mut self) -> Result<$type> where Self: ReadEndian<$type> { self.read_from_little_endian() }
-            fn $b_name (&mut self) -> Result<$type> where Self: ReadEndian<$type>  { self.read_from_big_endian() }
-        };
+    
+
+    pub trait ReadPrimitive {
+        fn read_from_little_endian(read: &mut impl Read + ReadEndian<Self>) -> Result<Self> {
+            read.read_from_little_endian()
+        }
+
+        fn read_from_big_endian(read: &mut impl Read + ReadEndian<Self>) -> Result<Self> {
+            read.read_from_big_endian()
+        }
     }
 
-    pub trait ReadPrimitives {
-        primitive_read_fn! { read_u8_from_little_endian, read_u8_from_big_endian, u8 }
-        primitive_read_fn! { read_i8_from_little_endian, read_i8_from_big_endian, i8 }
-
-        primitive_read_fn! { read_u16_from_little_endian, read_u16_from_big_endian, u16 }
-        primitive_read_fn! { read_i16_from_little_endian, read_i16_from_big_endian, i16 }
-
-        primitive_read_fn! { read_u32_from_little_endian, read_u32_from_big_endian, u32 }
-        primitive_read_fn! { read_i32_from_little_endian, read_i32_from_big_endian, i32 }
-
-        primitive_read_fn! { read_u64_from_little_endian, read_u64_from_big_endian, u64 }
-        primitive_read_fn! { read_i64_from_little_endian, read_i64_from_big_endian, i64 }
-
-        primitive_read_fn! { read_u128_from_little_endian, read_u128_from_big_endian, u128 }
-        primitive_read_fn! { read_i128_from_little_endian, read_i128_from_big_endian, i128 }
-
-        primitive_read_fn! { read_f32_from_little_endian, read_f32_from_big_endian, f32 }
-        primitive_read_fn! { read_f64_from_little_endian, read_f64_from_big_endian, f64 }
-    }
-
-    impl<R: Read> ReadPrimitives for R { }
-
+    impl<R: Read, P> ReadPrimitive for P where R: ReadEndian<P> {}
 
     macro_rules! implement_simple_primitive_write {
         ($type: ident) => {
