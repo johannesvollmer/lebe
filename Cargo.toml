@@ -10,7 +10,7 @@ documentation = "https://docs.rs/crate/lebe/"
 readme = "README.md"
 license-file = "LICENSE.md"
 keywords = ["endianness", "binary", "io", "byteorder", "endian"]
-categories = ["encoding", "filesystem", "algorithms", "conversion"]
+categories = ["encoding", "filesystem", "algorithms"]
 
 [lib]
 path = "src/lib.rs"
