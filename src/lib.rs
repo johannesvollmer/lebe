@@ -30,8 +30,8 @@
 //! use lebe::prelude::*;
 //! let mut reader: &[u8] = &[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 //!
-//! let mut numbers = [0_u64, 0_u64];
-//! reader.read_little_endian_into(&mut numbers)?;
+//! let mut numbers: &mut [u64] = &mut [0, 0];
+//! reader.read_from_little_endian_into(numbers)?;
 //! # Ok::<(), std::io::Error>(())
 //! ```
 //!
@@ -406,31 +406,31 @@ pub mod io {
 
     macro_rules! implement_slice_io {
         ($type: ident) => {
-            impl<W: Write, T: AsRef<[$type]>> WriteEndian<T> for W {
-                fn write_as_little_endian(&mut self, value: T) -> Result<()> {
+            impl<W: Write> WriteEndian<[$type]> for W {
+                fn write_as_little_endian(&mut self, value: &[$type]) -> Result<()> {
                     #[cfg(target_endian = "big")] {
-                        for number in value.as_ref() { // TODO SIMD!
+                        for number in value { // TODO SIMD!
                             self.write_as_little_endian(number)?;
                         }
                     }
 
                     // else write whole slice
                     #[cfg(target_endian = "little")]
-                    unsafe { bytes::write_slice(self, value.as_ref())?; }
+                    unsafe { bytes::write_slice(self, value)?; }
 
                     Ok(())
                 }
 
-                fn write_as_big_endian(&mut self, value: T) -> Result<()> {
+                fn write_as_big_endian(&mut self, value: &[$type]) -> Result<()> {
                     #[cfg(target_endian = "little")] {
-                        for number in value.as_ref() { // TODO SIMD!
+                        for number in value { // TODO SIMD!
                             self.write_as_big_endian(number)?;
                         }
                     }
 
                     // else write whole slice
                     #[cfg(target_endian = "big")]
-                    unsafe { bytes::write_slice(self, value.as_ref())?; }
+                    unsafe { bytes::write_slice(self, value)?; }
 
                     Ok(())
                 }
