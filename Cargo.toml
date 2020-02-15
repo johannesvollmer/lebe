@@ -23,7 +23,7 @@ proc-macro = false
 
 
 [badges]
-maintenance = { status = "actively-maintained" }
+maintenance = { status = "actively-developed" }
 
 [features]
 # simd = []
