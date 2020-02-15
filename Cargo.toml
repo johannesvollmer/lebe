@@ -1,27 +1,33 @@
 [package]
 name = "lebe"
-version = "0.1.0"
+version = "0.5.0"
+authors = ["johannesvollmer <johannes596@t-online.de>"]
 edition = "2018"
 
-description = "Tiny, dead simple, high performance endianness conversions"
-categories = ["algorithms", "encoding", "filesystem", "parsing", ]
-keywords = ["byteorder", "endianness", "little endian", "big endian", "conversion"]
-authors = ["johannesvollmer <johannes596@t-online.de>"]
-
-documentation = "https://docs.rs/crate/lebe/"
+description = "Tiny, dead simple, high performance endianness conversions with a generic API"
 repository = "https://github.com/johannesvollmer/lebe"
+documentation = "https://docs.rs/crate/lebe/"
 readme = "README.md"
-license = "MIT"
+license = "LICENSE.md"
+keywords = ["endianness", "binary", "io", "byteorder", "endian"]
+categories = ["encoding", "filesystem", "algorithms", "conversion"]
+maintenance = { status = "passively-maintained" }
+
+[lib]
+path = "src/lib.rs"
+test = true
+doctest = true
+bench = true
+doc = true
+plugin = false
+proc-macro = false
+
 
 [badges]
 maintenance = { status = "actively-maintained" }
 
-[lib]
-doctest = true
-
 [features]
-simd = []
-
+# simd = []
 
 [dev-dependencies]
 bencher = "0.1.5"
@@ -29,8 +35,9 @@ byteorder = "1.3.2"
 
 [[bench]]
 name = "benches"
-harness = false # FIXME what does this mean?
+harness = false
 
 [profile.bench]
 lto = true
 debug = true
+
