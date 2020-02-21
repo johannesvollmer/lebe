@@ -288,11 +288,18 @@ pub mod io {
     /// Add `use lebe::io::WriteEndian;` to your code
     /// to automatically unlock this functionality for all types that implement `Write`.
     pub trait WriteEndian<T: ?Sized> {
-        /// Write the byte value of the specified reference
+
+        /// Write the byte value of the specified reference, converting it to little endianness
         fn write_as_little_endian(&mut self, value: &T) -> Result<()>;
 
-        /// Write the byte value of the specified reference
+        /// Write the byte value of the specified reference, converting it to big endianness
         fn write_as_big_endian(&mut self, value: &T) -> Result<()>;
+
+        /// Write the byte value of the specified reference, not converting it
+        fn write_as_native_endian(&mut self, value: &T) -> Result<()> {
+            #[cfg(target_endian = "little")] { self.write_as_little_endian(value) }
+            #[cfg(target_endian = "big")] { self.write_as_big_endian(value) }
+        }
     }
 
     /// A `std::io::Read` input stream which supports reading any primitive values from bytes.
@@ -302,11 +309,18 @@ pub mod io {
     /// Add `use lebe::io::ReadEndian;` to your code
     /// to automatically unlock this functionality for all types that implement `Read`.
     pub trait ReadEndian<T: ?Sized> {
+
         /// Read into the supplied reference. Acts the same as `std::io::Read::read_exact`.
         fn read_from_little_endian_into(&mut self, value: &mut T) -> Result<()>;
 
         /// Read into the supplied reference. Acts the same as `std::io::Read::read_exact`.
         fn read_from_big_endian_into(&mut self, value: &mut T) -> Result<()>;
+
+        /// Read into the supplied reference. Acts the same as `std::io::Read::read_exact`.
+        fn read_from_native_endian_into(&mut self, value: &mut T) -> Result<()> {
+            #[cfg(target_endian = "little")] { self.read_from_little_endian_into(value) }
+            #[cfg(target_endian = "big")] { self.read_from_big_endian_into(value) }
+        }
 
         /// Read the byte value of the inferred type
         #[inline]
@@ -322,6 +336,13 @@ pub mod io {
             let mut value = T::default();
             self.read_from_big_endian_into(&mut value)?;
             Ok(value)
+        }
+
+        /// Read the byte value of the inferred type
+        #[inline]
+        fn read_from_native_endian(&mut self) -> Result<T> where T: Sized + Default {
+            #[cfg(target_endian = "little")] { self.read_from_little_endian() }
+            #[cfg(target_endian = "big")] { self.read_from_big_endian() }
         }
     }
 
@@ -363,6 +384,11 @@ pub mod io {
         /// Read this value from the supplied reader. Same as `ReadEndian::read_from_big_endian()`.
         fn read_from_big_endian(read: &mut R) -> Result<Self> {
             read.read_from_big_endian()
+        }
+
+        /// Read this value from the supplied reader. Same as `ReadEndian::read_from_native_endian()`.
+        fn read_from_native_endian(read: &mut R) -> Result<Self> {
+            read.read_from_native_endian()
         }
     }
 
