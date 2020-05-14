@@ -1,5 +1,6 @@
 # LEBE
-Tiny, dead simple, high performance endianness conversions
+Tiny, dead simple, high performance endianness conversions with a generic API.
+This crate purposefully does not have a different method, like `write_u16(my_value)`, for each primitive type, but uses generic type inference instead, like `write(my_u16)`.  
 
 # Purpose
 This crate has exactly two purposes:
