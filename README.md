@@ -5,15 +5,14 @@
 
 # LEBE
 Tiny, dead simple, high performance endianness conversions with a generic API.
-This crate purposefully does not have a different method, like `write_u16(my_value)`, for each primitive type, but uses generic type inference instead, like `write(my_u16)`.  
-
-The [byteorder crate](https://github.com/BurntSushi/byteorder) has ![Lines of Code](https://tokei.rs/b1/github/BurntSushi/byteorder?category=code) for this task.
-
+This crate purposefully does not have a different method, like `write_u16(my_value)`, for each primitive type. Instead, this uses generic type inference: `write(my_u16)`.  
 
 # Purpose
 This crate has exactly two purposes:
   1. Simple conversion between slices of primitives and byte arrays without unsafe code
   2. Simple and fast conversion from one endianness to the other one
+
+The [byteorder crate](https://github.com/BurntSushi/byteorder) uses ![Lines of Code](https://tokei.rs/b1/github/BurntSushi/byteorder?category=code) for this.
 
 This simplifies reading and writing binary data to files or network streams.
 
