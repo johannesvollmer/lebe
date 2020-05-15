@@ -1,4 +1,4 @@
-[![Lines of Code](https://tokei.rs/b1/github/johannesvollmer/lebe?category=code)]
+![Lines of Code](https://tokei.rs/b1/github/johannesvollmer/lebe?category=code)
 
 
 # LEBE
