@@ -1,3 +1,5 @@
+[![Rust Docs](https://docs.rs/lebe/badge.svg)](https://docs.rs/lebe) 
+[![Crate Crate](https://img.shields.io/crates/v/lebe.svg)](https://crates.io/crates/lebe) 
 ![Lines of Code](https://tokei.rs/b1/github/johannesvollmer/lebe?category=code)
 
 
