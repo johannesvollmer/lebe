@@ -8,7 +8,7 @@ description = "Tiny, dead simple, high performance endianness conversions with a
 repository = "https://github.com/johannesvollmer/lebe"
 documentation = "https://docs.rs/crate/lebe/"
 readme = "README.md"
-license-file = "LICENSE.md"
+license = "BSD-3-Clause"
 keywords = ["endianness", "binary", "io", "byteorder", "endian"]
 categories = ["encoding", "filesystem", "algorithms"]
 
