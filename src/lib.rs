@@ -171,23 +171,20 @@ impl Endian for i8 { fn swap_bytes(&mut self) {} }
 impl Endian for [u8] { fn swap_bytes(&mut self) {} }
 impl Endian for [i8] { fn swap_bytes(&mut self) {} }
 
-// implement this interface for primitive floats, because they do not have a conversion in `std`
-macro_rules! implement_float_primitive_by_transmute {
-    ($type: ident, $proxy: ident) => {
+// implement this interface for primitive floats, because they do not have a `swap_bytes()` in `std`
+macro_rules! implement_float_primitive_by_bits {
+    ($type: ident) => {
         impl Endian for $type {
             fn swap_bytes(&mut self) {
-                unsafe {
-                    let proxy: &mut $proxy = &mut *(self as *mut Self as *mut $proxy);
-                    proxy.swap_bytes();
-                }
+                *self = Self::from_bits(self.to_bits().swap_bytes());
             }
         }
     };
 }
 
 
-implement_float_primitive_by_transmute!(f32, u32);
-implement_float_primitive_by_transmute!(f64, u64);
+implement_float_primitive_by_bits!(f32);
+implement_float_primitive_by_bits!(f64);
 
 macro_rules! implement_slice_by_element {
     ($type: ident) => {
