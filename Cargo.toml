@@ -1,7 +1,7 @@
 [package]
 name = "lebe"
 version = "0.5.2"
-authors = ["johannesvollmer <johannes596@t-online.de>"]
+authors = ["johannesvollmer <contact@johannesvollmer.com>"]
 edition = "2018"
 
 description = "Tiny, dead simple, high performance endianness conversions with a generic API"
@@ -11,6 +11,7 @@ readme = "README.md"
 license = "BSD-3-Clause"
 keywords = ["endianness", "binary", "io", "byteorder", "endian"]
 categories = ["encoding", "filesystem", "algorithms"]
+rust-version = "1.78.0"
 
 [lib]
 path = "src/lib.rs"
