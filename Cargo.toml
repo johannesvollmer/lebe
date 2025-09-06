@@ -1,6 +1,6 @@
 [package]
 name = "lebe"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["johannesvollmer <contact@johannesvollmer.com>"]
 edition = "2018"
 
