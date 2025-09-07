@@ -19,8 +19,6 @@ fn make_le_u32_slice() {
     else {
         assert_eq!(n_le, [u32::swap_bytes(n)])
     }
-
-//    assert_eq!(n_le, byteorder::LittleEndian::from_)
 }
 
 #[test]
@@ -76,20 +74,20 @@ fn make_le_i64_slice() {
 fn make_be_f64() {
     let i = 0x14F3EEBCCD93895A_u64;
 
-    let mut f: f64 = unsafe { mem::transmute(i) };
+    let mut f = f64::from_bits(i);
     f.convert_current_to_big_endian();
 
-    assert_eq!(f, unsafe { mem::transmute(i.to_be()) })
+    assert_eq!(f, f64::from_bits(i.to_be()))
 }
 
 #[test]
 fn into_be_f64() {
     let i = 0x14F3EEBCCD93895A_u64;
 
-    let f: f64 = unsafe { mem::transmute(i) };
+    let f: f64 = f64::from_bits(i);
     let f = f.from_current_into_big_endian();
 
-    assert_eq!(f, unsafe { mem::transmute(i.to_be()) })
+    assert_eq!(f, f64::from_bits(i.to_be()))
 }
 
 #[test]
